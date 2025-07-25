@@ -1,2 +1,4 @@
-Attention
-![AttentionMatrix](sd/AttentionMatrixs.PNG)
+SelfAttention
+![SelfAttention](AttentionMatrixs.PNG)
+CrossAttention
+![CrossAttention](CrossAttn.PNG)

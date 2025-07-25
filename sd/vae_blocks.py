@@ -10,9 +10,34 @@ ResdiualBlock
 
 # 区别继承nn.Module与nn.Sequential的网络定义方法
 class VAE_AttentionBlock(nn.Module):
-    def __init__(self, seq_len):
+    def __init__(self, channels):
         super.__init__()
+        self.groupnorm = nn.GroupNorm(32,channels)
+        self.attention = SelfAttention(1,channels)
+    
+    def forward(self,x):
+        # x : (B,C,H,W)
+        
+        residue = x
 
+        x = self.groupnorm(x)
+
+        # 进行维度转换,将图片转换为Token序列
+        n, c, h, w = x.shape
+        # (B,C,H,W) -> (B,C,H*W) -> (B,H*W,C)
+        x = x.view((n, c, h * w)) 
+        x = x.transpose(-1, -2)
+
+        x = self.attention(x)
+
+        # 还原维度
+        # (B,H*W,C) -> (B,C,H*W) -> (B,C,H,W)
+        x = x.transpose(-1, -2)
+        x = x.view((n, c, h, w))
+
+        x += residue
+
+        return x
         
 class VAE_ResidualBlock(nn.Module):
     def __init__(self, in_channels,out_channels):
