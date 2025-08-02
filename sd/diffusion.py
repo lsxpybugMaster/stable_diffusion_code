@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from attention import SelfAttention, CrossAttention
+from unet_blocks import UNET_ResidualBlock,UNET_AttentionBlock,Upsample 
 
 # 总体结构
 class Diffusion(nn.Module):
@@ -44,7 +45,24 @@ class SwitchSequential(nn.Sequential):
             else:
                 x = layer(x)
         return x
-    
+
+# 时间嵌入：(1,320) -> (1,1280)
+class TimeEmbedding(nn.Module):
+    def __init__(self,n_embed):
+        super.__init__()
+        self.linear_1 = nn.Linear(n_embed, 4 * n_embed)
+        self.linear_2 = nn.Linear(4 * n_embed,4 * n_embed)
+
+    def forward(self,x):
+        # x : (1 , 320)
+        # (1,320) -> (1,1280)
+        x = self.linear_1(x)
+        x = F.silu(x)
+        x = self.linear_2(x)
+
+        return x
+                
+
 class UNET(nn.Module):
     def __init__(self):   
         super().__init__()
@@ -139,3 +157,19 @@ class UNET(nn.Module):
             x = layers(x,context,time)
 
         return x
+
+# UNET 输出: (B,320,H/8,W/8) -> (B,4,H/8,W/8)
+class UNET_OutputLayer(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.groupnorm = nn.GroupNorm(32,in_channels)
+        self.conv = nn.Conv2d(in_channels,out_channels,kernel_size=3,padding=1)
+
+    def forward(self,x):
+        # x : (B, 320, H/8, W/8)
+        x = self.groupnorm(x)
+        x = F.silu(x)
+        # (B, 320, H/8, W/8) -> (B, 4, H/8, W/8)
+        x = self.conv(x)
+        return x
+
