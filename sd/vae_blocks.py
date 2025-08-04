@@ -11,7 +11,7 @@ ResdiualBlock
 # 区别继承nn.Module与nn.Sequential的网络定义方法
 class VAE_AttentionBlock(nn.Module):
     def __init__(self, channels):
-        super.__init__()
+        super().__init__()
         self.groupnorm = nn.GroupNorm(32,channels)
         self.attention = SelfAttention(1,channels)
     

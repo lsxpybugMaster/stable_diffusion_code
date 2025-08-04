@@ -56,7 +56,7 @@ class UNET_ResidualBlock(nn.Module):
 
 class UNET_AttentionBlock(nn.Module):
     def __init__(self, n_head:int ,n_embd:int, d_context = 768):
-        super.__init__()
+        super().__init__()
 
         channels = n_head * n_embd
 

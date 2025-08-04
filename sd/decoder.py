@@ -48,7 +48,7 @@ class VAE_Decoder(nn.Sequential):
             nn.GroupNorm(32,128),
             nn.SiLU(),
             # (B,128,H,W) -> (B,3,H,W)
-            nn.conv2d(128,3,kernel_size=3,padding=1),
+            nn.Conv2d(128,3,kernel_size=3,padding=1),
         )
 
     def forward(self, x):

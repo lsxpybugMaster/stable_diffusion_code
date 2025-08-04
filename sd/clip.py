@@ -15,11 +15,11 @@ class CLIP(nn.Module):
         # 词表大小 = 49408
         self.embedding = CLIPEmbedding(49408,768,77)
 
-        self.layers = nn.ModuleList(
-            [ CLIPLayer(12,768) for i in range(12) ]
-        ) 
+        self.layers = nn.ModuleList([
+            CLIPLayer(12,768) for i in range(12)
+        ]) 
 
-        self.layerNorm = nn.LayerNorm(768)
+        self.layernorm = nn.LayerNorm(768)
 
     # emdedding 层只接受int64
     def forward(self,tokens : torch.LongTensor) -> torch.FloatTensor:
@@ -32,7 +32,7 @@ class CLIP(nn.Module):
         for layer in self.layers:
             state = layer(state)
 
-        output = self.layerNorm(state)
+        output = self.layernorm(state)
 
         return output
     
@@ -58,6 +58,7 @@ class CLIPEmbedding(nn.Module):
 # 类似Transformer 
 class CLIPLayer(nn.Module):
     def __init__(self,n_head : int,n_embd : int):
+        super().__init__()
 
         # Attention Part
         self.layernorm_1 = nn.LayerNorm(n_embd)

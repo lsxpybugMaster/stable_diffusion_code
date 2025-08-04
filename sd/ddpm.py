@@ -84,3 +84,106 @@ class DDPMSampler:
 
         self.timesteps = self.timesteps[start_step:]
         self.start_step = start_step
+
+    # 去噪过程 q(x_(t-1)|xt, x0)
+    def step(self, timestep : int, latents : torch.Tensor , model_output : torch.Tensor):
+        # latent ：xt
+        # model_output : ε(xt)
+
+        # t
+        t = timestep
+        # t-1 指上一个时间步
+        prev_t = self._get_previous_timestep(t)
+
+        # α¯t
+        alpha_prod_t = self.alphas_cumprod[t]
+        # α¯(t-1)
+        alpha_prod_t_prev = self.alphas_cumprod[prev_t] if prev_t >= 0 else self.one
+        # β¯t
+        beta_prod_t = 1 - alpha_prod_t
+        # β¯(t-1)
+        beta_prod_t_prev = 1 - alpha_prod_t_prev
+        # αt
+        current_alpha_t = alpha_prod_t / alpha_prod_t_prev
+        # βt
+        current_beta_t = 1 - current_alpha_t
+
+        ## 计算x0预测值    公式(15)
+        pred_original_sample = (latents - beta_prod_t ** (0.5) * model_output) / alpha_prod_t ** (0.5)
+
+        
+        ## 计算μ˜(xt,x0)   公式(7)
+        # 计算xt,x0前系数
+        pred_original_sample_coeff = (alpha_prod_t_prev ** (0.5) * current_beta_t) / beta_prod_t
+        current_sample_coeff = (current_alpha_t ** (0.5) * beta_prod_t_prev) / beta_prod_t
+
+        # 计算 μ˜(xt,x0)
+        pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * latents
+
+        '''
+        去噪公式           公式(6)
+        q(x_(t-1)|xt, x0) = N(x_(t-1) ; μ˜(xt,x0) ; (β˜t)*I)  
+            I 为单位矩阵 
+            (β˜t)*I 代表协方差矩阵,对角线元素分别为β˜t
+        重参数化技巧：
+            x_(t-1) = μ˜ + (β˜)**0.5 * Noise
+        '''
+        #  (β˜)**0.5 * Noise 部分
+        variance = 0
+        if t > 0:
+            device = model_output.device
+            noise  = torch.randn(model_output.shape, generator=self.generator,device=device,dtype=model_output.dtype)
+            variance = (self._get_variance(t) ** 0.5) * noise
+
+        # 重参数化公式    
+        # x_(t-1)
+        pred_prev_sample = pred_prev_sample + variance
+
+        return pred_prev_sample
+    
+
+    def add_noise(
+        self,
+        original_samples : torch.FloatTensor,
+        timesteps: torch.IntTensor,
+    ) -> torch.FloatTensor:
+        # original_samples : 类似x0
+        '''
+        加噪公式           公式(4)
+        q(xt | x0) = N(xt; (α¯t)**0.5*x0 ; (1 - α¯t)*I)  
+        重参数化技巧：
+            xt = (α¯t)**0.5*x0  + (1 - α¯t)**0.5 * Noise
+        '''
+        alphas_cumprod = self.alphas_cumprod.to(device=original_samples.device,dtype=original_samples.dtype)
+        timesteps = timesteps.to(original_samples.device)
+
+        # (α¯t)**0.5
+        sqrt_alpha_prod = alphas_cumprod[timesteps] ** 0.5
+        sqrt_alpha_prod = sqrt_alpha_prod.flatten()
+        while len(sqrt_alpha_prod.shape) < len(original_samples.shape):
+            sqrt_alpha_prod = sqrt_alpha_prod.unsqueeze(-1)
+       
+        # (1 - α¯t)**0.5
+        sqrt_one_minus_alpha_prod = (1 - alphas_cumprod[timesteps]) ** 0.5
+        sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod.flatten()
+        while len(sqrt_one_minus_alpha_prod.shape) < len(original_samples.shape):
+            sqrt_one_minus_alpha_prod = sqrt_one_minus_alpha_prod.unsqueeze(-1)
+        
+        # 重参数化公式
+        noise = torch.randn(original_samples.shape,generator=self.generator,device=original_samples.device,dtype=original_samples.dtype)
+        noisy_samples = sqrt_alpha_prod * original_samples + sqrt_one_minus_alpha_prod * noise
+
+        return noisy_samples
+
+        
+    
+
+
+        
+
+
+
+
+
+
+

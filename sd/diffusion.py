@@ -49,7 +49,7 @@ class SwitchSequential(nn.Sequential):
 # 时间嵌入：(1,320) -> (1,1280)
 class TimeEmbedding(nn.Module):
     def __init__(self,n_embed):
-        super.__init__()
+        super().__init__()
         self.linear_1 = nn.Linear(n_embed, 4 * n_embed)
         self.linear_2 = nn.Linear(4 * n_embed,4 * n_embed)
 

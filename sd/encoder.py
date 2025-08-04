@@ -7,7 +7,7 @@ from vae_blocks import VAE_AttentionBlock,VAE_ResidualBlock
 # VAE 由卷积和注意力块构成
 class VAE_Encoder(nn.Sequential):
     def __init__(self):
-        super.__init__(
+        super().__init__(
             # Input : (B,C=3,H,W) -> (B,128,H,W)
             nn.Conv2d(3,128,kernel_size = 3,padding = 1),
 

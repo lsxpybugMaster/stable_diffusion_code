@@ -21,7 +21,7 @@ y = C @ Wo   : (seq_len * d_embed)
 
 # 多头自注意力机制
 class SelfAttention(nn.Module):
-    def __init__(self, n_heads, d_embed,in_proj_bias = True,out_proj_bias = True):
+    def __init__(self, n_heads, d_embed, in_proj_bias = True,out_proj_bias = True):
         super().__init__()
 
         # [Wq,Wk,Wv] 合并矩阵，一次计算

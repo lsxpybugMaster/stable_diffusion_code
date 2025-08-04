@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# 数据文件不上传
+/data/
+
 # Distribution / packaging
 .Python
 build/
